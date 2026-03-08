@@ -67,6 +67,16 @@ const features = [
     route: "/user/records" as any,
   },
   {
+    id: "scanner",
+    title: "Medicine Scanner",
+    subtitle: "Identify by photo",
+    icon: "camera-outline" as const,
+    iconLib: "Ionicons",
+    color: "#4F46E5",
+    bg: "#EEF2FF",
+    route: "/user/medicine-scanner",
+  },
+  {
     id: "orders",
     title: "My Orders",
     subtitle: "Track deliveries",

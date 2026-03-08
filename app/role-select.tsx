@@ -41,15 +41,7 @@ const roles = [
     gradient: ["#F59E0B", "#D97706"] as [string, string],
     route: "/delivery/login",
   },
-  {
-    id: "admin",
-    title: "Admin",
-    subtitle: "Verify pharmacies, approve delivery partners & manage platform",
-    icon: "shield-checkmark-outline" as const,
-    iconLib: "Ionicons",
-    gradient: ["#8B5CF6", "#6D28D9"] as [string, string],
-    route: "/admin/login",
-  },
+  // Admin role is hidden from the public role selection portal
 ];
 
 export default function RoleSelectScreen() {

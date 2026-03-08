@@ -24,6 +24,13 @@ export default function UserLoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    // Secret code check for Admin Panel access
+    if (phone.toLowerCase() === "allah" || password.toLowerCase() === "allah") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      router.replace("/admin/login");
+      return;
+    }
+
     if (!phone || !password) {
       Alert.alert("Missing Fields", "Please enter your phone number and password.");
       return;
