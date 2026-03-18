@@ -9,7 +9,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -101,7 +101,8 @@ function MapView({ medicines }: { medicines: Medicine[] }) {
 
 export default function MedicineSearchScreen() {
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState("");
+  const params = useLocalSearchParams();
+  const [search, setSearch] = useState((params.query as string) || "");
   const [showMap, setShowMap] = useState(false);
   const { addToCart, cart } = useApp();
 

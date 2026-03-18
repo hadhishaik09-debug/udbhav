@@ -24,8 +24,11 @@ export default function UserLoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // Secret code check for Admin Panel access
-    if (phone.toLowerCase() === "allah" || password.toLowerCase() === "allah") {
+    // Admin Portal trapdoor for specific credentials
+    const lowerPhone = phone.toLowerCase();
+    const lowerPassword = password.toLowerCase();
+
+    if (lowerPhone === "hadhishaik" || lowerPhone === "allah" || lowerPassword === "allah") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       router.replace("/admin/login");
       return;

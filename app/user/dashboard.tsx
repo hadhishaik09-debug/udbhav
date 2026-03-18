@@ -77,6 +77,16 @@ const features = [
     route: "/user/medicine-scanner",
   },
   {
+    id: "doc-analyzer",
+    title: "Document Analyzer",
+    subtitle: "AI report insights",
+    icon: "analytics-outline" as const,
+    iconLib: "Ionicons",
+    color: "#EC4899",
+    bg: "#FCE7F3",
+    route: "/user/document-analyzer",
+  },
+  {
     id: "orders",
     title: "My Orders",
     subtitle: "Track deliveries",

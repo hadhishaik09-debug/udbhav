@@ -241,8 +241,9 @@ function setupErrorHandler(app: express.Application) {
   server.listen(
     {
       port,
-      host: "127.0.0.1",
+      host: "0.0.0.0",
     },
+
     () => {
       log(`express server serving on port ${port}`);
     },
