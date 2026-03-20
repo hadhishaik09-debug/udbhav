@@ -182,7 +182,7 @@ export default function DocumentAnalyzerScreen() {
             <View style={styles.resultCard}>
               <View style={styles.cardHeader}>
                 <Ionicons name="information-circle-outline" size={20} color={Colors.amber} />
-                <Text style={styles.cardTitle}>Doctor's Instructions</Text>
+                <Text style={styles.cardTitle}>Doctor&apos;s Instructions</Text>
               </View>
               <Text style={styles.cardText}>{result.instructions}</Text>
             </View>

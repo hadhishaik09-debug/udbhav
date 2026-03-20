@@ -31,9 +31,18 @@ public class PatientService {
     }
 
     public ShareToken createShareLink(Patient patient, List<UUID> documentIds, int expiryHours) {
+        List<UUID> ownedDocumentIds = documentRepository.findByPatient(patient).stream()
+                .map(Document::getId)
+                .filter(documentIds::contains)
+                .toList();
+
+        if (ownedDocumentIds.isEmpty()) {
+            throw new IllegalArgumentException("No valid documents selected for sharing");
+        }
+
         ShareToken token = ShareToken.builder()
                 .patient(patient)
-                .documentIds(documentIds)
+                .documentIds(ownedDocumentIds)
                 .expiryTime(LocalDateTime.now().plusHours(expiryHours))
                 .isUsed(false)
                 .permissions("READ")

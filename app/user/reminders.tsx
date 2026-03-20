@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Reminder } from "@/context/AppContext";
 import * as Haptics from "expo-haptics";
+import * as DocumentPicker from 'expo-document-picker';
 
 const dosageTypeLabels = {
   half_tablet: "Half Tablet",
@@ -40,12 +41,26 @@ const statusColors = {
 
 const timeOptions = ["06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM", "06:00 PM", "08:00 PM", "09:00 PM", "10:00 PM"];
 
+const alarmSounds = [
+  { id: "default", name: "Default Chime", icon: "musical-notes-outline" },
+  { id: "zen", name: "Zen Bowl", icon: "sunny-outline" },
+  { id: "pulse", name: "Echo Pulse", icon: "pulse-outline" },
+  { id: "birds", name: "Forest Birds", icon: "leaf-outline" },
+  { id: "harp", name: "Gentle Harp", icon: "infinite-outline" },
+];
+
 export default function RemindersScreen() {
   const insets = useSafeAreaInsets();
   const { reminders, addReminder, updateReminderStatus, deleteReminder } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [medicineName, setMedicineName] = useState("");
   const [selectedTime, setSelectedTime] = useState("08:00 AM");
+  const [isCustomTime, setIsCustomTime] = useState(false);
+  const [customTime, setCustomTime] = useState("");
+  const [selectedSound, setSelectedSound] = useState(alarmSounds[0]);
+  const [isCustomSound, setIsCustomSound] = useState(false);
+  const [customSound, setCustomSound] = useState("");
+  const [customAudioUri, setCustomAudioUri] = useState<string | null>(null);
   const [dosageType, setDosageType] = useState<Reminder["dosageType"]>("full_tablet");
   const [dosageAmount, setDosageAmount] = useState("1");
 
@@ -54,20 +69,51 @@ export default function RemindersScreen() {
       Alert.alert("Required", "Please enter medicine name.");
       return;
     }
+    const finalTime = isCustomTime ? customTime || "12:00 PM" : selectedTime;
+    const finalSound = isCustomSound ? (customSound || "Custom Sound") : selectedSound.name;
+    const finalSoundUri = isCustomSound ? customAudioUri : null;
+    
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addReminder({
       id: Date.now().toString(),
       medicineName: medicineName.trim(),
-      time: selectedTime,
+      time: finalTime,
       dosageType,
       dosageAmount,
       status: "pending",
+      alarmSound: finalSound,
+      alarmSoundUri: finalSoundUri as any, // Ad-hoc extension for now
     });
     setMedicineName("");
     setSelectedTime("08:00 AM");
+    setIsCustomTime(false);
+    setCustomTime("");
+    setSelectedSound(alarmSounds[0]);
+    setIsCustomSound(false);
+    setCustomSound("");
+    setCustomAudioUri(null);
     setDosageType("full_tablet");
     setDosageAmount("1");
     setShowAddModal(false);
+  };
+  
+  const pickCustomAudio = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'audio/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setCustomSound(asset.name);
+        setCustomAudioUri(asset.uri);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    } catch (error) {
+      console.error('Error picking audio:', error);
+      Alert.alert('Error', 'Failed to pick audio file.');
+    }
   };
 
   const ReminderCard = ({ item }: { item: Reminder }) => {
@@ -84,9 +130,23 @@ export default function RemindersScreen() {
               {dosageTypeLabels[item.dosageType]} — {item.dosageAmount}
               {item.dosageType === "syrup" ? " ml" : " tab"}
             </Text>
-            <View style={styles.reminderTimeRow}>
-              <Ionicons name="alarm-outline" size={14} color={Colors.textMuted} />
-              <Text style={styles.reminderTime}>{item.time}</Text>
+            <View style={styles.reminderMetaRow}>
+              <View style={styles.reminderTimeRow}>
+                <Ionicons name="alarm-outline" size={14} color={Colors.textMuted} />
+                <Text style={styles.reminderTime}>{item.time}</Text>
+              </View>
+              {item.alarmSound && (
+                <View style={[styles.reminderTimeRow, { marginLeft: 10 }]}>
+                  <Ionicons 
+                    name={item.alarmSoundUri ? "folder-open-outline" : "musical-note"} 
+                    size={14} 
+                    color={Colors.textMuted} 
+                  />
+                  <Text style={styles.reminderTime}>
+                    {item.alarmSoundUri ? `File: ${item.alarmSound}` : item.alarmSound}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -175,7 +235,7 @@ export default function RemindersScreen() {
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Add Reminder</Text>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 450 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 600 }}>
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Medicine Name</Text>
                 <TextInput
@@ -188,18 +248,96 @@ export default function RemindersScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Reminder Time</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                  {timeOptions.map((t) => (
-                    <TouchableOpacity
-                      key={t}
-                      style={[styles.timeChip, selectedTime === t && styles.timeChipActive]}
-                      onPress={() => setSelectedTime(t)}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={styles.formLabel}>Reminder Time</Text>
+                  <TouchableOpacity onPress={() => setIsCustomTime(!isCustomTime)}>
+                    <Text style={{ fontSize: 13, color: Colors.primary, fontFamily: 'Inter_600SemiBold' }}>
+                      {isCustomTime ? "Use presets" : "Enter custom"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {isCustomTime ? (
+                  <View style={styles.customTimeRow}>
+                    <Ionicons name="time-outline" size={20} color={Colors.textMuted} style={{ marginRight: 10 }} />
+                    <TextInput
+                      style={{ flex: 1, height: 50, fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.textPrimary }}
+                      placeholder="e.g. 05:45 PM"
+                      placeholderTextColor={Colors.textMuted}
+                      value={customTime}
+                      onChangeText={setCustomTime}
+                    />
+                  </View>
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {timeOptions.map((t) => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[styles.timeChip, selectedTime === t && styles.timeChipActive]}
+                        onPress={() => setSelectedTime(t)}
+                      >
+                        <Text style={[styles.timeChipText, selectedTime === t && styles.timeChipTextActive]}>{t}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+
+              <View style={styles.formGroup}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={styles.formLabel}>Alarm Sound</Text>
+                  <TouchableOpacity onPress={() => setIsCustomSound(!isCustomSound)}>
+                    <Text style={{ fontSize: 13, color: Colors.primary, fontFamily: 'Inter_600SemiBold' }}>
+                      {isCustomSound ? "Use presets" : "Enter custom"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {isCustomSound ? (
+                  <View style={{ gap: 8 }}>
+                    <View style={styles.customTimeRow}>
+                      <Ionicons name="musical-notes-outline" size={20} color={Colors.textMuted} style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={{ flex: 1, height: 50, fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.textPrimary }}
+                        placeholder="e.g. Morning Zen"
+                        placeholderTextColor={Colors.textMuted}
+                        value={customSound}
+                        onChangeText={setCustomSound}
+                      />
+                    </View>
+                    <TouchableOpacity 
+                      style={[styles.emptyBtn, { backgroundColor: Colors.emeraldLight, borderColor: Colors.emerald, borderWidth: 1, height: 44, paddingVertical: 0 }]} 
+                      onPress={pickCustomAudio}
                     >
-                      <Text style={[styles.timeChipText, selectedTime === t && styles.timeChipTextActive]}>{t}</Text>
+                      <Ionicons name="cloud-upload-outline" size={18} color={Colors.emerald} />
+                      <Text style={[styles.emptyBtnText, { color: Colors.emerald, fontSize: 13 }]}>
+                        {customAudioUri ? "Change file from device" : "Pick audio from device"}
+                      </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                    {customAudioUri && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 4 }}>
+                        <Ionicons name="attach" size={12} color={Colors.emerald} />
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.emerald }} numberOfLines={1}>
+                          File selected: {customSound}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+                    {alarmSounds.map((sound) => (
+                      <TouchableOpacity
+                        key={sound.id}
+                        style={[styles.soundChip, selectedSound.id === sound.id && styles.soundChipActive]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedSound(sound);
+                        }}
+                      >
+                        <Ionicons name={sound.icon as any} size={16} color={selectedSound.id === sound.id ? Colors.white : Colors.textSecondary} />
+                        <Text style={[styles.soundChipText, selectedSound.id === sound.id && styles.soundChipTextActive]}>{sound.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
               </View>
 
               <View style={styles.formGroup}>
@@ -220,7 +358,7 @@ export default function RemindersScreen() {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
+              <View style={[styles.formGroup, { marginBottom: 20 }]}>
                 <Text style={styles.formLabel}>
                   {dosageType === "syrup" ? "Amount (ml)" : "Quantity (tablets)"}
                 </Text>
@@ -323,6 +461,7 @@ const styles = StyleSheet.create({
   reminderName: { fontSize: 15, fontFamily: "Inter_700Bold", color: Colors.textPrimary },
   reminderDosage: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
   reminderTimeRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  reminderMetaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   reminderTime: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textMuted },
   reminderRight: { alignItems: "flex-end", gap: 8 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
@@ -353,6 +492,15 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.background,
   },
+  customTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    paddingLeft: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
   timeChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -364,6 +512,23 @@ const styles = StyleSheet.create({
   timeChipActive: { borderColor: Colors.amber, backgroundColor: Colors.amberLight },
   timeChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
   timeChipTextActive: { color: Colors.amber, fontFamily: "Inter_700Bold" },
+  soundChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  soundChipActive: { 
+    borderColor: Colors.primary, 
+    backgroundColor: Colors.primary,
+  },
+  soundChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
+  soundChipTextActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },
   dosageOptions: { flexDirection: "row", gap: 10 },
   dosageOption: {
     flex: 1,

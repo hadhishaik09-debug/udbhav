@@ -1,5 +1,6 @@
 package com.healthrecord.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -18,6 +20,7 @@ public class Document {
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
+    @JsonIgnoreProperties({"documents", "password", "permanentToken"})
     private Patient patient;
 
     @Column(nullable = false)

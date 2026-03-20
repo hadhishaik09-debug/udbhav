@@ -7,6 +7,8 @@ import {
   Platform,
   ScrollView,
   Animated,
+  Linking,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -59,6 +61,7 @@ export default function SOSScreen() {
       setCountdown(count);
       if (count <= 0) {
         if (timerRef.current) clearInterval(timerRef.current);
+        callNumber("108"); // Call ambulance by default when SOS completes
       }
     }, 1000);
   };
@@ -68,6 +71,24 @@ export default function SOSScreen() {
     if (timerRef.current) clearInterval(timerRef.current);
     setSosActivated(false);
     setCountdown(5);
+  };
+
+  const callNumber = (number: string) => {
+    let phoneNumber = number;
+    if (Platform.OS !== 'android') {
+      phoneNumber = `telprompt:${number}`;
+    } else {
+      phoneNumber = `tel:${number}`;
+    }
+    Linking.canOpenURL(phoneNumber)
+      .then(supported => {
+        if (!supported) {
+          Alert.alert('Error', 'Direct calling is not supported on this device');
+        } else {
+          return Linking.openURL(phoneNumber);
+        }
+      })
+      .catch(err => console.error('An error occurred', err));
   };
 
   return (
@@ -140,7 +161,10 @@ export default function SOSScreen() {
             <TouchableOpacity
               key={contact.number}
               style={styles.emergencyCard}
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                callNumber(contact.number);
+              }}
             >
               <View style={[styles.emergencyIcon, { backgroundColor: `${contact.color}22` }]}>
                 <Ionicons name={contact.icon as any} size={24} color={contact.color} />
@@ -167,7 +191,13 @@ export default function SOSScreen() {
               </View>
             </View>
             <View style={styles.hospitalActions}>
-              <TouchableOpacity style={styles.callBtn}>
+              <TouchableOpacity 
+                style={styles.callBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  callNumber(h.phone);
+                }}
+              >
                 <Ionicons name="call" size={18} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.navBtn}>

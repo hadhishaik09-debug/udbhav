@@ -1,5 +1,6 @@
 package com.healthrecord.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ShareToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -19,6 +21,7 @@ public class ShareToken {
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
+    @JsonIgnoreProperties({"documents", "password", "permanentToken"})
     private Patient patient;
 
     @Column(unique = true, nullable = false)
@@ -28,6 +31,7 @@ public class ShareToken {
     private LocalDateTime expiryTime;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isUsed = false;
 
     @Column(nullable = false)

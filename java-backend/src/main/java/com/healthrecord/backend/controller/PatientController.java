@@ -1,5 +1,6 @@
 package com.healthrecord.backend.controller;
 
+import com.healthrecord.backend.dto.ShareLinkRequest;
 import com.healthrecord.backend.model.Document;
 import com.healthrecord.backend.model.Patient;
 import com.healthrecord.backend.model.ShareToken;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,11 +45,16 @@ public class PatientController {
     @PostMapping("/share")
     public ResponseEntity<Map<String, Object>> createShareLink(
             @AuthenticationPrincipal Patient patient,
-            @RequestBody Map<String, Object> payload) throws Exception {
-        
-        List<String> docIdsStr = (List<String>) payload.get("documentIds");
+            @RequestBody ShareLinkRequest request) throws Exception {
+        List<String> docIdsStr = request.documentIds();
+        if (docIdsStr == null || docIdsStr.isEmpty()) {
+            throw new IllegalArgumentException("At least one documentId is required");
+        }
         List<UUID> docIds = docIdsStr.stream().map(UUID::fromString).toList();
-        int expiryHours = (int) payload.getOrDefault("expiryHours", 1);
+        int expiryHours = request.expiryHours() == null ? 1 : request.expiryHours();
+        if (expiryHours <= 0) {
+            throw new IllegalArgumentException("expiryHours must be greater than 0");
+        }
 
         ShareToken st = patientService.createShareLink(patient, docIds, expiryHours);
         String shareUrl = "http://localhost:8081/share/" + st.getToken();

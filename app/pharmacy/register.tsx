@@ -118,7 +118,7 @@ export default function PharmacyRegisterScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle-outline" size={18} color={Colors.primary} />
           <Text style={styles.infoText}>
-            Your registration will be reviewed by our admin team. You'll be able to log in once your pharmacy is verified (typically within 24 hours).
+            Your registration will be reviewed by our admin team. You&apos;ll be able to log in once your pharmacy is verified (typically within 24 hours).
           </Text>
         </View>
 
